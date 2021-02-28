@@ -76,6 +76,7 @@ local _request = function(params)
     if not params.url then error("missing URL") end
     local url = s_url.parse(params.url)
     local user, password = url.user, url.password
+    local handler = params.handler
     if not (user and password) then
         error("missing credentials in URL")
     end
@@ -95,7 +96,13 @@ local _request = function(params)
         end
         params.source = ltn12.source.chain(params.source, ghost_capture)
     end
-    local b, c, h = s_http.request(params)
+    local _http
+    if handler ~= nil then
+       _http = require "copas.http"
+    else
+       _http = s_http
+    end
+    local b, c, h = _http.request(params)
     if (c == 401) and h["www-authenticate"] then
         local ht = parse_header(h["www-authenticate"])
         assert(ht.realm and ht.nonce)
@@ -140,23 +147,56 @@ local _request = function(params)
             end
         end
         if params.source then params.source = ghost_source end
-        b, c, h = s_http.request(params)
-        return b, c, h
-    else return b, c, h end
-end
-
-local request = function(params)
-    local t = type(params)
-    if t == "table" then
-        return _request(hcopy(params))
-    elseif t == "string" then
-        local r = {}
-        local _, c, h = _request({url = params, sink = ltn12.sink.table(r)})
-        return table.concat(r), c, h
+	b, c, h = _http.request(params)
+	if type(handler) == "function" then
+	   if params._magic ~= nil then
+	      return handler(table.concat(params._magic), c, h)
+	   else
+	      return handler(b, c, h)
+	   end
+	else
+	   return b, c, h
+	end
     else
-        error(fmt("unexpected type %s", t))
+       if type(handler) == "function" then
+	  if params._magic ~= nil then
+	     return handler(table.concat(params._magic), c, h)
+	  else
+	     return handler(b, c, h)
+	  end
+       else
+	  return b, c, h
+       end
     end
 end
+
+local request = function(params, handler)
+   local t = type(params)
+   if t == "table" then
+      if type(params.handler) == "function" then
+	 assert(type(params.handler) == "function", "Handler must be of type function.")
+	 local copas = require "copas"
+	 copas.addthread(_request, params)
+      elseif type(params.handler) == "boolean" then
+	 return _request(hcopy(params))
+      else
+	 return _request(hcopy(params))
+      end
+   elseif t == "string" then
+      local r = {}
+      local params = {url = params, sink = ltn12.sink.table(r), handler = handler, _magic = r}
+      if type(handler) == "function" then
+	 local copas = require "copas"
+	 copas.addthread(_request, hcopy(params))
+      else
+	 local _, c, h = _request(hcopy(params))
+	 return table.concat(r), c, h
+      end
+   else
+      error(fmt("unexpected type %s", t))
+   end
+end
+
 
 return {
     md5_library = md5_library,
