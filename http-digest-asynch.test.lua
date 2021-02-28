@@ -18,7 +18,7 @@ local b, c, _
 local url = "http://user:passwd@httpbin.org/digest-auth/auth/user/passwd"
 local badurl = "http://user:nawak@httpbin.org/digest-auth/auth/user/passwd"
 local aggr = true
-local N = 5
+local N = 10
 
 if aggr ==  true then
    T:start("Test started")
@@ -35,11 +35,13 @@ if aggr == false then
    T:start("simple interface")
 end
 http_digest.request(url,
-		    function(b, c, h)
+		    function(b, c, h, opaque)
 		       dprint("body=%s status=%d header=%s", b, c, pretty.write(h,""))
 		       T:eq( c, 200 )
 		       T:eq( json_decode(b), {authenticated = true, user = "user"} )
-		    end
+		       T:eq( opaque, "test 0")
+		    end,
+		    "test 0"
 )
 if aggr == false then
    repeat
@@ -54,10 +56,13 @@ if aggr == false then
    T:start("simple interface - bad url")
 end
 http_digest.request(badurl,
-		    function(b, c, h)
+		    function(b, c, h, opaque)
 		       dprint("body=%s status=%d header=%s", b, c, pretty.write(h,""))
 		       T:eq( c, 401 )
-		    end
+		       T:eq( opaque, "test 1")
+		    end,
+		    "test 1"
+		    
 )
 if aggr == false then
    repeat
@@ -73,14 +78,16 @@ if aggr == false then
 end
 b1 = {}
 http_digest.request {
-    url = url,
-    sink = ltn12.sink.table(b1),
-    handler = function(_b, c, h)
-       dprint("body=%s status=%d header=%s", _b, c, pretty.write(h,""))
-       T:eq( c, 200 )
-       local b = table.concat(b1)
-       T:eq( json_decode(b), {authenticated = true, user = "user"} )
-    end
+   url = url,
+   opaque = "test 2",
+   sink = ltn12.sink.table(b1),
+   handler = function(_b, c, h, opaque)
+      dprint("body=%s status=%d header=%s", _b, c, pretty.write(h,""))
+      T:eq( c, 200 )
+      local b = table.concat(b1)
+      T:eq( json_decode(b), {authenticated = true, user = "user"} )
+      T:eq( opaque, "test 2")
+   end
 }
 if aggr == false then
    repeat
@@ -95,9 +102,11 @@ if aggr == false then
 end
 http_digest.request({
       url = badurl,
-      handler = function(_b, c, h)
+      opaque = "test 3",
+      handler = function(_b, c, h, opaque)
 	 dprint("body=%s status=%d header=%s", _b, c, pretty.write(h,""))
 	 T:eq(c, 401)
+	 T:eq(opaque, "test 3")
       end
 })
 
@@ -120,11 +129,13 @@ http_digest.request {
     sink = ltn12.sink.table(b2),
     source = ltn12.source.string("test"),
     headers = {["content-length"] = 4}, -- 0 would work too
-    handler = function(_b, c, h)
+    opaque = "test 4",
+    handler = function(_b, c, h, opaque)
        dprint("body=%s status=%d header=%s", _b, c, pretty.write(h,""))
        T:eq( c, 200 )
        local b = table.concat(b2)
        T:eq( json_decode(b), {authenticated = true, user = "user"} )
+       T:eq( opaque, "test 4")
     end
 }
 
@@ -142,10 +153,11 @@ if aggr == false then
 end
 local function task1(instance)
    dprint("task1-inst%d started", instance)
-   local b, c, h = http_digest.request(url, true)
+   local b, c, h, opaque = http_digest.request(url, true, "test1-inst"..instance)
    dprint("task1-inst%d: body=%s status=%d header=%s", instance, b, c, pretty.write(h,""))
    T:eq( c, 200 )
    T:eq( json_decode(b), {authenticated = true, user = "user"} )
+   T:eq( opaque, "test1-inst"..instance)
 end
 
 for i = 1, N do
@@ -168,14 +180,16 @@ end
 local function task2(instance)
    dprint("task2-inst%d started", instance)
    local b1 = {}
-   local b, c, h = http_digest.request {
+   local b, c, h, opaque = http_digest.request {
       url = url,
       sink = ltn12.sink.table(b1),
+      opaque = "test2-inst"..instance,
       handler = true,
    }
    dprint("task2-inst%d: body=%s status=%d header=%s", instance, b, c, pretty.write(h,""))
    T:eq( c, 200 )
    T:eq( json_decode(table.concat(b1)), {authenticated = true, user = "user"} )
+   T:eq( opaque, "test2-inst"..instance)
 end
 
 for i = 1, N do

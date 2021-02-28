@@ -150,27 +150,31 @@ local _request = function(params)
 	b, c, h = _http.request(params)
 	if type(handler) == "function" then
 	   if params._magic ~= nil then
-	      return handler(table.concat(params._magic), c, h)
+	      return handler(table.concat(params._magic), c, h, params.opaque)
 	   else
-	      return handler(b, c, h)
+	      return handler(b, c, h, params.opaque)
 	   end
+	elseif type(handler) == "boolean" then
+	   return b, c, h, params.opaque
 	else
 	   return b, c, h
 	end
     else
        if type(handler) == "function" then
 	  if params._magic ~= nil then
-	     return handler(table.concat(params._magic), c, h)
+	     return handler(table.concat(params._magic), c, h, params.opaque)
 	  else
-	     return handler(b, c, h)
+	     return handler(b, c, h, params.opaque)
 	  end
+       elseif type(handler) == "boolean" then
+	  return b, c, h, params.opaque
        else
 	  return b, c, h
        end
     end
 end
 
-local request = function(params, handler)
+local request = function(params, handler, opaque)
    local t = type(params)
    if t == "table" then
       if type(params.handler) == "function" then
@@ -184,10 +188,13 @@ local request = function(params, handler)
       end
    elseif t == "string" then
       local r = {}
-      local params = {url = params, sink = ltn12.sink.table(r), handler = handler, _magic = r}
+      local params = {url = params, sink = ltn12.sink.table(r), handler = handler, opaque = opaque, _magic = r}
       if type(handler) == "function" then
 	 local copas = require "copas"
 	 copas.addthread(_request, hcopy(params))
+      elseif type(handler) == "boolean" then
+	 local _, c, h = _request(hcopy(params))
+	 return table.concat(r), c, h, opaque
       else
 	 local _, c, h = _request(hcopy(params))
 	 return table.concat(r), c, h

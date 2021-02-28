@@ -29,7 +29,7 @@ local url = "http://user:passwd@httpbin.org/digest-auth/auth/user/passwd"
 local b, c, h = http_digest.request(url)
 ```
 
-Here is an example using asynchronous requests using [copas](https://keplerproject.github.io/copas) with a user supplied handler function. The handler receives the body of the response, the HTTP status code and the response header. This form is intended to be used in cases, where http-digest.lua is not used within another module providing a response header, for instance [luasoap](https://tomasguisasola.github.io/luasoap).
+Here is an example using asynchronous requests using [copas](https://keplerproject.github.io/copas) with a user supplied handler function. The handler receives the body of the response, the HTTP status code, the response header and an opaque user value given at request time allowing to associate the asynchronous response with the request. This form is intended to be used in cases, where http-digest.lua is not used within another module providing a response header, for instance [luasoap](https://tomasguisasola.github.io/luasoap).
 
 ```lua
 local http_digest = require "http-digest"
@@ -38,7 +38,8 @@ local b, c, h = http_digest.request{
   url = url,
   user = USER,
   password = PASSWORD,
-  handler = function(b, c, h)
+  opaque = SOME_USER_VALUE,
+  handler = function(b, c, h, opaque)
     print("Request returned with status code " .. c)
   end
 )
@@ -53,16 +54,17 @@ local b, c, h = http_digest.request{
   url = url,
   user = USER,
   password = PASSWORD,
+  opaque = SOME_USER_VALUE,
   handler = true 
 )
 ```
 
-Finally the same use case but with the simple interface. A second boolean parameter instructs http-digest to operate asynchronously.
+Finally the same use case but with the simple interface. A second boolean parameter instructs http-digest to operate asynchronously. The opaque transaction id is given as extra paremter to the request.
 
 ```lua
 local http_digest = require "http-digest"
 local url = "http://user:passwd@httpbin.org/digest-auth/auth/user/passwd"
-local b, c, h = http_digest.request(url, true)
+local b, c, h, opaque = http_digest.request(url, true, SOME_USER_VALUE)
 ```
 
 See the tests for more.
