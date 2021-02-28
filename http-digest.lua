@@ -154,8 +154,6 @@ local _request = function(params)
 	   else
 	      return handler(b, c, h, params.opaque)
 	   end
-	elseif type(handler) == "boolean" then
-	   return b, c, h, params.opaque
 	else
 	   return b, c, h
 	end
@@ -166,8 +164,6 @@ local _request = function(params)
 	  else
 	     return handler(b, c, h, params.opaque)
 	  end
-       elseif type(handler) == "boolean" then
-	  return b, c, h, params.opaque
        else
 	  return b, c, h
        end
@@ -181,8 +177,6 @@ local request = function(params, handler, opaque)
 	 assert(type(params.handler) == "function", "Handler must be of type function.")
 	 local copas = require "copas"
 	 copas.addthread(_request, params)
-      elseif type(params.handler) == "boolean" then
-	 return _request(hcopy(params))
       else
 	 return _request(hcopy(params))
       end
@@ -192,9 +186,6 @@ local request = function(params, handler, opaque)
       if type(handler) == "function" then
 	 local copas = require "copas"
 	 copas.addthread(_request, hcopy(params))
-      elseif type(handler) == "boolean" then
-	 local _, c, h = _request(hcopy(params))
-	 return table.concat(r), c, h, opaque
       else
 	 local _, c, h = _request(hcopy(params))
 	 return table.concat(r), c, h

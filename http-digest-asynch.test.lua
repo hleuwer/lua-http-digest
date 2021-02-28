@@ -153,11 +153,10 @@ if aggr == false then
 end
 local function task1(instance)
    dprint("task1-inst%d started", instance)
-   local b, c, h, opaque = http_digest.request(url, true, "test1-inst"..instance)
+   local b, c, h = http_digest.request(url, true)
    dprint("task1-inst%d: body=%s status=%d header=%s", instance, b, c, pretty.write(h,""))
    T:eq( c, 200 )
    T:eq( json_decode(b), {authenticated = true, user = "user"} )
-   T:eq( opaque, "test1-inst"..instance)
 end
 
 for i = 1, N do
@@ -180,16 +179,14 @@ end
 local function task2(instance)
    dprint("task2-inst%d started", instance)
    local b1 = {}
-   local b, c, h, opaque = http_digest.request {
+   local b, c, h = http_digest.request {
       url = url,
       sink = ltn12.sink.table(b1),
-      opaque = "test2-inst"..instance,
       handler = true,
    }
    dprint("task2-inst%d: body=%s status=%d header=%s", instance, b, c, pretty.write(h,""))
    T:eq( c, 200 )
    T:eq( json_decode(table.concat(b1)), {authenticated = true, user = "user"} )
-   T:eq( opaque, "test2-inst"..instance)
 end
 
 for i = 1, N do

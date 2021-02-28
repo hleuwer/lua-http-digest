@@ -54,7 +54,6 @@ local b, c, h = http_digest.request{
   url = url,
   user = USER,
   password = PASSWORD,
-  opaque = SOME_USER_VALUE,
   handler = true 
 )
 ```
@@ -64,7 +63,7 @@ Finally the same use case but with the simple interface. A second boolean parame
 ```lua
 local http_digest = require "http-digest"
 local url = "http://user:passwd@httpbin.org/digest-auth/auth/user/passwd"
-local b, c, h, opaque = http_digest.request(url, true, SOME_USER_VALUE)
+local b, c, h = http_digest.request(url, true)
 ```
 
 See the tests for more.
