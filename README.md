@@ -25,7 +25,7 @@ Here is an example with the simple interface. The request blocks unit the respon
 
 ```lua
 local http_digest = require "http-digest"
-local url = "http://user:passwd@httpbin.org/digest-auth/auth/user/passwd"
+local url = "http://USER:PASSWD@httpbin.org/digest-auth/auth/user/passwd"
 local b, c, h = http_digest.request(url)
 ```
 
@@ -33,11 +33,9 @@ Here is an example using asynchronous requests using [copas](https://keplerproje
 
 ```lua
 local http_digest = require "http-digest"
-local url = "http://httpbin.org/digest-auth/auth/user/passwd"
+local url = "http://USER:PASSWD@httpbin.org/digest-auth/auth/user/passwd"
 local b, c, h = http_digest.request{
   url = url,
-  user = USER,
-  password = PASSWORD,
   opaque = SOME_USER_VALUE,
   handler = function(b, c, h, opaque)
     print("Request returned with status code " .. c)
@@ -49,11 +47,9 @@ This third example also uses asynchronoous requests provided by copas. No handle
 
 ```lua
 local http_digest = require "http-digest"
-local url = "http://httpbin.org/digest-auth/auth/user/passwd"
+local url = "http://USER:PASSWD@httpbin.org/digest-auth/auth/user/passwd"
 local b, c, h = http_digest.request{
   url = url,
-  user = USER,
-  password = PASSWORD,
   handler = true 
 )
 ```
@@ -62,7 +58,7 @@ Finally the same use case but with the simple interface. A second boolean parame
 
 ```lua
 local http_digest = require "http-digest"
-local url = "http://user:passwd@httpbin.org/digest-auth/auth/user/passwd"
+local url = "http://USER:PASSWD@httpbin.org/digest-auth/auth/user/passwd"
 local b, c, h = http_digest.request(url, true)
 ```
 
